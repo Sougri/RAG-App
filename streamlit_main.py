@@ -20,6 +20,8 @@ import os
 current_directory = os.getcwd()
 print("Current working directory:", current_directory)
 
+os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
+
 if "GOOGLE_API_KEY" not in os.environ:
     print("No connection with the server")
 else:
