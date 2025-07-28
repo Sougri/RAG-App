@@ -2,6 +2,10 @@
 #pip install --upgrade langchain langchain-google-genai
 #pip install pypdf faiss-cpu #sentence-transformers
 #pip install streamlit
+#pip install nest_asyncio
+
+import nest_asyncio
+nest_asyncio.apply()
 
 import streamlit as st
 from langchain_community.document_loaders import PyPDFDirectoryLoader
