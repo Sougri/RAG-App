@@ -53,7 +53,7 @@ CUSTOM_PROMPT = PromptTemplate(
 def load_chain():
     # Charger et découper le document
     path = "/workspaces/RAG-App/Database" #"/workspaces/RAG-App/Database"
-    # Load the legal document
+    # Load the legal document3
     loader = PyPDFDirectoryLoader(path)
     documents = loader.load()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
