@@ -1,3 +1,11 @@
+#pip install -U langchain-community
+#pip install --upgrade langchain langchain-google-genai
+#pip install pypdf faiss-cpu #sentence-transformers
+#pip install streamlit
+
+if "GOOGLE_API_KEY" not in os.environ:
+    os.environ["GOOGLE_API_KEY"] = UserSecretsClient().get_secret("GOOGLE_API_KEY")
+
 import streamlit as st
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
