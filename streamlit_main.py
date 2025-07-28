@@ -18,14 +18,14 @@ from langchain.prompts import PromptTemplate
 import os
 
 # Add custom CSS to hide the GitHub icon
-hide_github_icon = """
+hide_elements = """
 <style>
-#GithubIcon {
-    visibility: hidden;
+.styles_viewerBadge__1yB5_, .viewerBadge_link__1S137, .viewerBadge_text__1JaDK {
+    display: none;
 }
 </style>
 """
-st.markdown(hide_github_icon, unsafe_allow_html=True)
+st.markdown(hide_elements, unsafe_allow_html=True)
 
 # Print current directory
 current_directory = os.getcwd()
