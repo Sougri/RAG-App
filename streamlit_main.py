@@ -54,7 +54,7 @@ CUSTOM_PROMPT = PromptTemplate(
 @st.cache_resource
 def load_chain():
     # Charger et découper le document
-    path = "/workspaces/RAG-App/Database" #"/workspaces/RAG-App/Database"
+    path = "./Database" #"/workspaces/RAG-App/Database"
     # Load the legal document
     loader = PyPDFDirectoryLoader(path)
     documents = loader.load()
