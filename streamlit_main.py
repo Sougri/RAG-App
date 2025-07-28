@@ -13,6 +13,9 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.prompts import PromptTemplate
 import os
 
+c = os.environ["GOOGLE_API_KEY"]
+#print(c)
+
 if "GOOGLE_API_KEY" not in os.environ:
     print("No connection with the server")
 else:
