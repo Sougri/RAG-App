@@ -13,7 +13,7 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.prompts import PromptTemplate
 import os
 
-c = os.environ["GOOGLE_API_KEY"]
+#c = os.environ["GOOGLE_API_KEY"]
 #print(c)
 
 if "GOOGLE_API_KEY" not in os.environ:
@@ -48,7 +48,7 @@ CUSTOM_PROMPT = PromptTemplate(
 @st.cache_resource
 def load_chain():
     # Charger et découper le document
-    path = "/kaggle/input/lois-bf"
+    path = "/workspaces/RAG-App/Database"
     # Load the legal document
     loader = PyPDFDirectoryLoader(path)
     documents = loader.load()
