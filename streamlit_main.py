@@ -3,9 +3,6 @@
 #pip install pypdf faiss-cpu #sentence-transformers
 #pip install streamlit
 
-if "GOOGLE_API_KEY" not in os.environ:
-    os.environ["GOOGLE_API_KEY"] = UserSecretsClient().get_secret("GOOGLE_API_KEY")
-
 import streamlit as st
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -14,6 +11,12 @@ from langchain_community.vectorstores import FAISS
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from langchain.prompts import PromptTemplate
+import os
+
+if "GOOGLE_API_KEY" not in os.environ:
+    print("No connection with the server")
+else:
+    print("connected with the server")
 
 # --- Configuration du Prompt et du LLM (peut être mis dans une fonction pour la propreté) ---
 
