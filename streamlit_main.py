@@ -113,7 +113,7 @@ st.title("⚖️ Assistant Juridique Personnalisé")
 st.markdown("Posez vos questions sur le document juridique chargé, et je vous fournirai une réponse simple et claire.")
 
 # Charger la chaîne conversationnelle
-chain = chain = load_chain_with_session_history()
+chain = load_chain_with_session_history()
 
 # Initialiser l'historique du chat dans l'état de la session Streamlit
 if 'messages' not in st.session_state:
