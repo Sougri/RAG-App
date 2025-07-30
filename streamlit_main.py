@@ -64,7 +64,7 @@ CUSTOM_PROMPT = PromptTemplate(
 
 # Fonction pour initialiser la chaîne de conversation (pour éviter de la recréer à chaque interaction)
 @st.cache_resource
-def load_chain():
+def load_base_dependencies():
     # Charger et découper le document
     path = "./Database" #"/workspaces/RAG-App/Database"
     # Load the legal document
@@ -78,15 +78,25 @@ def load_chain():
     vector_store = FAISS.from_documents(chunks, embeddings)
     retriever = vector_store.as_retriever()
     
-    # LLM et Mémoire
+    return retriever
+
+def load_chain_with_session_history():
+    """
+    Loads the ConversationalRetrievalChain with a unique memory for each session.
+    """
+    retriever = load_base_dependencies()
+    # LLM
     llm = ChatGoogleGenerativeAI(temperature=0.1, model="gemini-2.0-flash")
-    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
     
-    # La chaîne conversationnelle
+    # Create a unique memory for each session if it doesn't exist
+    if 'memory' not in st.session_state:
+        st.session_state.memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+    
+    # The conversational chain
     chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=retriever,
-        memory=memory,
+        memory=st.session_state.memory,
         combine_docs_chain_kwargs={"prompt": CUSTOM_PROMPT}
     )
     return chain
@@ -98,7 +108,7 @@ st.title("⚖️ Assistant Juridique Personnalisé")
 st.markdown("Posez vos questions sur le document juridique chargé, et je vous fournirai une réponse simple et claire.")
 
 # Charger la chaîne conversationnelle
-chain = load_chain()
+chain = chain = load_chain_with_session_history()
 
 # Initialiser l'historique du chat dans l'état de la session Streamlit
 if 'messages' not in st.session_state:
