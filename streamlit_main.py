@@ -136,7 +136,7 @@ if user_prompt := st.chat_input("Posez votre question ici..."):
 
     # Obtenir la réponse de l'assistant
     with st.spinner("L'assistant réfléchit..."):
-        result = chain.invoke({"question": user_prompt})
+        result = chain({"question": user_prompt})
         response = result["answer"]
 
         # Ajouter et afficher la réponse de l'assistant
