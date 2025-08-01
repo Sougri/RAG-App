@@ -17,7 +17,10 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.prompts import PromptTemplate
 import os
 
-# Add custom CSS to hide the GitHub icon
+# --- Configuration de la page et des styles ---
+st.set_page_config(page_title="Assistant Juridique", page_icon="⚖️")
+
+# CSS personnalisé pour masquer les badges Streamlit
 hide_elements = """
 <style>
 .styles_viewerBadge__1yB5_, .viewerBadge_link__1S137, .viewerBadge_text__1JaDK {
@@ -27,20 +30,11 @@ hide_elements = """
 """
 st.markdown(hide_elements, unsafe_allow_html=True)
 
-# Print current directory
-current_directory = os.getcwd()
-print("Current working directory:", current_directory)
-
-# Set the API key
+# --- Connexion à l'API Google ---
+# Il est recommandé de gérer les secrets de cette manière pour la sécurité
 os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
 
-if "GOOGLE_API_KEY" not in os.environ:
-    print("No connection with the server")
-else:
-    print("connected with the server")
-
-# --- Configuration du Prompt et du LLM (peut être mis dans une fonction pour la propreté) ---
-
+# --- Définition du Prompt Personnalisé ---
 prompt_template_francais = """
 Vous êtes un assistant juridique expert. Votre rôle est d'expliquer un sujet juridique complexe à une personne qui n'a aucune connaissance dans ce domaine.
 Votre objectif est de fournir une réponse simple, claire et instructive en vous basant *uniquement* sur le contexte fourni et l'historique de la conversation. Ne générez pas d'informations qui ne sont pas dans le contexte.
@@ -59,84 +53,93 @@ Question :
 Réponse simple et claire :
 """
 CUSTOM_PROMPT = PromptTemplate(
-    template=prompt_template_francais, input_variables=["chat_history", "question"]
+    template=prompt_template_francais, input_variables=["chat_history", "context", "question"]
 )
 
-# Fonction pour initialiser la chaîne de conversation (pour éviter de la recréer à chaque interaction)
+# --- Fonctions de chargement (Mise en cache pour la performance) ---
+
 @st.cache_resource
-def load_base_dependencies():
-    # Charger et découper le document
-    path = "./Database" #"/workspaces/RAG-App/Database"
-    # Load the legal document
+def load_and_process_documents():
+    """
+    Charge les PDF, les découpe et crée une base de données vectorielle (retriever).
+    Cette fonction est mise en cache (@st.cache_resource) car elle est coûteuse et
+    son résultat est identique pour toutes les sessions. Elle n'est exécutée qu'une seule fois.
+    """
+    print("--- Exécution de load_and_process_documents (ne devrait apparaître qu'une fois) ---")
+    path = "./Database"
     loader = PyPDFDirectoryLoader(path)
     documents = loader.load()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
     chunks = text_splitter.split_documents(documents)
     
-    # Embeddings et Vector Store
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     vector_store = FAISS.from_documents(chunks, embeddings)
-    retriever = vector_store.as_retriever()
     
-    return retriever
+    return vector_store.as_retriever()
 
-def load_chain_with_session_history():
+def get_conversational_chain():
     """
-    Loads the ConversationalRetrievalChain with a unique memory for each session.
+    Crée et configure la chaîne de conversation.
+    Cette fonction s'appuie sur st.session_state pour la mémoire,
+    garantissant une chaîne unique par session utilisateur.
     """
-    retriever = load_base_dependencies()
-    # LLM
+    retriever = load_and_process_documents()
     llm = ChatGoogleGenerativeAI(temperature=0.1, model="gemini-2.0-flash")
     
-    # Create a unique memory for each session if it doesn't exist
+    # POINT CLÉ N°1 : Initialisation de la mémoire propre à la session
+    # Ce bloc de code vérifie si 'memory' existe DANS LA SESSION ACTUELLE.
+    # S'il n'existe pas (nouvel onglet/nouvel utilisateur), il en crée un.
+    # Sinon, il réutilise la mémoire existante pour cet onglet spécifique.
     if 'memory' not in st.session_state:
-        print(f"--- Creating new memory for session {st.session_state} ---")
+        print(f"--- Création d'une nouvelle mémoire pour la session ---")
         st.session_state.memory = ConversationBufferMemory(
             memory_key='chat_history',
             return_messages=True,
-            output_key='answer'  # Important for the chain to know where the answer is stored
+            output_key='answer'
         )
     
-    # The conversational chain
+    # La chaîne est créée en utilisant la mémoire de la session en cours.
     chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=retriever,
         memory=st.session_state.memory,
-        combine_docs_chain_kwargs={"prompt": CUSTOM_PROMPT}
+        combine_docs_chain_kwargs={"prompt": CUSTOM_PROMPT},
+        return_source_documents=False # Optionnel : masquer les documents sources dans le résultat
     )
     return chain
 
 # --- Interface utilisateur Streamlit ---
 
-st.set_page_config(page_title="Assistant Juridique", page_icon="⚖️")
 st.title("⚖️ Assistant Juridique Personnalisé")
 st.markdown("Posez vos questions sur le document juridique chargé, et je vous fournirai une réponse simple et claire.")
 
-# Charger la chaîne conversationnelle
-chain = load_chain_with_session_history()
+# Charger la chaîne conversationnelle pour la session actuelle
+chain = get_conversational_chain()
 
-# Initialiser l'historique du chat dans l'état de la session Streamlit
+# POINT CLÉ N°2 : Initialisation de l'historique des messages propre à la session
+# De même que pour la mémoire, 'messages' est créé une fois par session
+# pour stocker et afficher l'historique du chat.
 if 'messages' not in st.session_state:
-    st.session_state['messages'] = []
+    st.session_state.messages = []
 
-# Afficher les messages précédents
-for message in st.session_state['messages']:
+# Afficher les messages de l'historique de la session en cours
+for message in st.session_state.messages:
     with st.chat_message(message['role']):
         st.markdown(message['content'])
 
 # Gérer la nouvelle entrée de l'utilisateur
 if user_prompt := st.chat_input("Posez votre question ici..."):
-    # Ajouter le message de l'utilisateur à l'historique et l'afficher
+    # Ajouter et afficher le message de l'utilisateur
     st.session_state.messages.append({"role": "user", "content": user_prompt})
     with st.chat_message("user"):
         st.markdown(user_prompt)
 
     # Obtenir la réponse de l'assistant
     with st.spinner("L'assistant réfléchit..."):
-        result = chain({"question": user_prompt})
+        result = chain.invoke({"question": user_prompt})
         response = result["answer"]
 
-        # Afficher la réponse de l'assistant et l'ajouter à l'historique
+        # Ajouter et afficher la réponse de l'assistant
         st.session_state.messages.append({"role": "assistant", "content": response})
         with st.chat_message("assistant"):
             st.markdown(response)
