@@ -90,7 +90,7 @@ def load_chain_with_session_history():
     
     # Create a unique memory for each session if it doesn't exist
     if 'memory' not in st.session_state:
-        print(f"--- Creating new memory for session {st.session_state.session_id} ---")
+        print(f"--- Creating new memory for session {st.session_state} ---")
         st.session_state.memory = ConversationBufferMemory(
             memory_key='chat_history',
             return_messages=True,
